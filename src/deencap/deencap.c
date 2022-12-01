@@ -54,7 +54,7 @@
 #include "header.h"
 #include "crc.h"
 #include "header_fields.h"
-
+#include "stdio.h"
 
 /****************************************************************************
  *
@@ -367,6 +367,7 @@ gse_status_t gse_deencap_packet(gse_vfrag_t *data, gse_deencap_t *deencap,
                    + GSE_MANDATORY_FIELDS_LENGTH;
   if((size_t)(*packet_length) > data->length)
   {
+    fprintf(stderr,"pkt len %ld data-length %ld\n",(size_t)(*packet_length),data->length);
     status = GSE_STATUS_INVALID_GSE_LENGTH;
     goto free_data;
   }
@@ -583,6 +584,7 @@ gse_status_t gse_deencap_packet(gse_vfrag_t *data, gse_deencap_t *deencap,
       label_length = gse_get_label_length(ctx->label_type);
       if(label_length < 0)
       {
+        fprintf(stderr,"gse_get_label_length <0 \n");
         status = GSE_STATUS_INVALID_LT;
         goto error;
       }
@@ -774,12 +776,13 @@ static gse_status_t gse_deencap_add_frag(gse_vfrag_t *partial_pdu,
   assert(partial_pdu != NULL);
   assert(deencap != NULL);
 
-  if(header.lt != GSE_LT_REUSE)
+  /*if(header.lt != GSE_LT_REUSE)
   {
+    fprintf(stderr,"Add frag Not reused \n");
     status = GSE_STATUS_INVALID_LT;
     goto free_partial_pdu;
   }
-
+*/
   /* Check if a context can exist for this Frag ID */
   if(header.subs_frag_s.frag_id >= gse_deencap_get_qos_nbr(deencap))
   {
@@ -843,12 +846,14 @@ static gse_status_t gse_deencap_add_last_frag(gse_vfrag_t *partial_pdu,
   assert(partial_pdu != NULL);
   assert(deencap != NULL);
 
+/*
   if(header.lt != GSE_LT_REUSE)
   {
+     fprintf(stderr,"Add last frag Not reused \n");
     status = GSE_STATUS_INVALID_LT;
     goto free_partial_pdu;
   }
-
+*/
   /* Check if a context can exist for this Frag ID */
   if(header.subs_frag_s.frag_id >= gse_deencap_get_qos_nbr(deencap))
   {
@@ -930,13 +935,15 @@ static gse_status_t gse_deencap_add_last_frag(gse_vfrag_t *partial_pdu,
     }
   }
 
-  /* Chek PDU length according to Total Length */
+  /* Chek PDU length according to Total Length : Check removed because of Newtec BUG !!!!*/
   if(gse_deencap_compute_pdu_length(ctx->total_length, ctx->label_type,
-                                    ctx->tot_ext_length)
+                                    ctx->tot_ext_length) 
      != ctx->partial_pdu->length)
   {
-    status = GSE_STATUS_INVALID_DATA_LENGTH;
-    goto free_ctx;
+    
+    //fprintf(stderr,"Length mismatch Total Length %d / compute %ld\n",ctx->total_length,gse_deencap_compute_pdu_length(ctx->total_length, ctx->label_type,ctx->tot_ext_length));
+    //status = GSE_STATUS_INVALID_DATA_LENGTH;
+    //goto free_ctx;
   }
 
   if(ntohl(rcv_crc) != ctx->crc)
